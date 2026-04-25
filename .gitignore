@@ -32,3 +32,4 @@ Thumbs.db
 # Chroma DB / vector stores
 chroma_db/
 *.sqlite3
+
