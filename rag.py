@@ -1,0 +1,76 @@
+import time
+
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+import config
+from utils.retriever import get_retriever
+from prompt import build_qa_prompt
+
+def get_llm():
+    return ChatGoogleGenerativeAI(
+        model="gemini-3.6-flash",
+        api_key=config.GOOGLE_API_KEY,
+        timeout=90,
+        max_retries=2,
+        temperature=0.2,
+        max_output_tokens=2048
+    )
+
+def extract_text(content):
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for part in content:
+            if isinstance(part, dict):
+                parts.append(part.get("text", ""))
+            else:
+                text = getattr(part, "text", "")
+                if text:
+                    parts.append(text)
+        return "\n".join(p for p in parts if p)
+    return str(content)
+
+def answer_question(question, k=5, max_attempts=5):
+    retriever = get_retriever(k=k)
+    docs = retriever.invoke(question)
+
+    context = [doc.page_content for doc in docs]
+    messages = build_qa_prompt(question, context)
+
+    llm = get_llm()
+
+    last_error = None
+    for attempt in range(max_attempts):
+        try:
+            response = llm.invoke(messages)
+            break
+        except Exception as e:
+            last_error = e
+            message = str(e)
+            if not any(code in message for code in ("503", "504", "500", "429", "UNAVAILABLE", "DEADLINE", "RESOURCE_EXHAUSTED", "INTERNAL", "GATEWAY")):
+                raise
+            if attempt == max_attempts - 1:
+                raise RuntimeError(
+                    f"Gemini API unavailable after {max_attempts} attempts (high demand / rate limit). "
+                    "Try again in a few seconds.") from last_error
+            time.sleep(2 ** (attempt + 1))
+    else:
+        raise RuntimeError(
+            f"Gemini API unavailable after {max_attempts} attempts (high demand / rate limit). "
+            "Try again in a few seconds.") from last_error
+
+    sources = sorted({doc.metadata.get("source") for doc in docs if doc.metadata.get("source")})
+
+    return {
+        "answer": extract_text(response.content),
+        "sources": sources,
+    }
+
+if __name__ == "__main__":
+    result = answer_question("How does an attacker dump credentials?")
+
+    print(result["answer"])
+    print("\nSources:")
+    for source in result["sources"]:
+        print(f"- {source}")
