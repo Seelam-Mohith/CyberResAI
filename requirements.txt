@@ -9,3 +9,4 @@ chromadb==1.5.9
 openai==2.41.0
 python-dotenv==1.0.1
 streamlit==1.51.0
+pyarrow==21.0.0

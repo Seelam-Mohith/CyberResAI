@@ -73,12 +73,14 @@ The `db/` vector store is committed so the cloud app starts instantly.
 2. Go to [share.streamlit.io](https://share.streamlit.io) → **Create app** → "Yup, I have an app".
 3. Enter your repo, branch, and set **Main file path** to `main.py`.
 4. Open **Advanced settings**:
-   - **Python version:** `3.12`
+   - **Python version:** `3.12` — **required.** Community Cloud recently defaults to Python 3.14, which has no `pyarrow` wheels; the build then tries to compile Arrow from source and fails on a missing `cmake`.
    - **Secrets:** paste
      ```
      GROQ_API_KEY = "<your-groq-api-key>"
      ```
 5. Click **Deploy**.
+
+> **Already deployed with the wrong Python?** The version can't be changed after deploy. Delete the app and redeploy, selecting `3.12` in Advanced settings this time. (`pyarrow` ships wheels for 3.12/3.13 only; Python 3.14 always fails the build.)
 
 Notes:
 - First cold start downloads the Hugging Face embedding model (~90 MB) and can take about a minute; later loads are faster.
