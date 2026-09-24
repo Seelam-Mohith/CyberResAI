@@ -443,7 +443,6 @@ def welcome_card_html():
 
     return f"""
     <div class="hero-card">
-      <div class="hero-head">🛡️ <span class="hero-title">CYBERRES-AI</span></div>
       <p class="hero-sub">// MITRE ATT&amp;CK Defense Intelligence · RAG Engine Online</p>
       <p class="hero-intro">Hi, I'm <b>CyberResAI</b> — your MITRE ATT&amp;CK defense advisor.
       Ask me about attacker techniques, detection ideas, or mitigation steps.</p>
