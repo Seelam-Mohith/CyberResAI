@@ -10,7 +10,7 @@ import config
 from rag import answer_question
 from utils.embeddings import embeddings
 
-PAGE_TITLE = "CyberResAI"
+PAGE_TITLE = "CyberRes-AI"
 PAGE_ICON = "🛡️"
 
 DEFAULT_WELCOME = (
@@ -256,7 +256,7 @@ def main():
     st.markdown(CSS, unsafe_allow_html=True)
 
     st.markdown(
-        '<div class="cyber-title">CYBERRESAI</div>'
+        '<div class="cyber-title">CYBERRES-AI</div>'
         '<div class="cyber-sub">// MITRE ATT&CK Defense Intelligence</div>',
         unsafe_allow_html=True,
     )
