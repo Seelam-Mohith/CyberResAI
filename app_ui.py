@@ -81,6 +81,9 @@ footer {
     margin: 0.45rem 0;
     line-height: 1.55;
     font-size: 0.95rem;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 .user-bubble {
     background: linear-gradient(135deg, #123, #0e2233);
@@ -106,6 +109,16 @@ footer {
     border: 1px solid var(--cyber-border);
     border-radius: 8px;
     padding: 0.7rem 0.9rem;
+    overflow-x: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+.ai-bubble img {
+    max-width: 100%;
+}
+.ai-bubble table {
+    display: block;
+    max-width: 100%;
     overflow-x: auto;
 }
 
