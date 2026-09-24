@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import time
 
 import streamlit as st
 
@@ -13,10 +14,9 @@ from utils.embeddings import embeddings
 PAGE_TITLE = "CyberRes-AI"
 PAGE_ICON = "🛡️"
 
-DEFAULT_WELCOME = (
-    "Hi, I'm **CyberResAI** — your MITRE ATT&CK defense advisor.\n\n"
-    "Ask me about attacker techniques, detection ideas, or mitigation steps."
-)
+CHUNK_SIZE = 800
+CHUNK_OVERLAP = 150
+TOP_K = 10
 
 CSS = """
 <style>
@@ -151,6 +151,119 @@ footer {
     border-radius: 10px !important;
     border: 1px solid var(--cyber-border) !important;
 }
+
+/* hero intelligence card */
+.hero-card {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(160deg, rgba(10, 18, 33, 0.95), rgba(13, 20, 36, 0.85));
+    border: 1px solid var(--cyber-border);
+    border-radius: 16px;
+    padding: 1.15rem 1.3rem 1.05rem;
+    margin: 0.5rem 0 0.9rem;
+    box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.05), 0 14px 36px rgba(0, 0, 0, 0.35);
+}
+.hero-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(340px 150px at 100% 0%, rgba(0, 229, 255, 0.12), transparent 60%),
+        radial-gradient(300px 150px at 0% 100%, rgba(255, 45, 120, 0.10), transparent 60%);
+    pointer-events: none;
+}
+.hero-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.1rem;
+}
+.hero-title {
+    font-family: "Segoe UI", "Consolas", monospace;
+    font-size: 1.32rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    background: linear-gradient(90deg, #00e5ff 0%, #ff2d78 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.hero-sub {
+    font-family: "Consolas", "Courier New", monospace;
+    color: var(--cyber-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin: 0 0 0.85rem;
+}
+.hero-intro {
+    color: var(--cyber-text);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin: 0 0 0.95rem;
+}
+.hero-intro b { color: #00e5ff; }
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+}
+.stat {
+    background: rgba(9, 15, 27, 0.9);
+    border: 1px solid var(--cyber-border);
+    border-left: 3px solid var(--cyber-cyan);
+    border-radius: 10px;
+    padding: 0.5rem 0.7rem;
+    min-width: 0;
+}
+.stat:nth-child(3n+2) { border-left-color: var(--cyber-magenta); }
+.stat:nth-child(3n)   { border-left-color: #ffb300; }
+.stat-value {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: var(--cyber-text);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+.stat-value .accent { color: var(--cyber-cyan); }
+.stat-label {
+    color: var(--cyber-dim);
+    font-size: 0.66rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    margin-top: 0.12rem;
+}
+.hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.1rem;
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed rgba(27, 39, 64, 0.8);
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 0.74rem;
+    color: var(--cyber-dim);
+}
+.hero-meta b { color: var(--cyber-cyan); font-weight: 600; }
+
+.latency-chip {
+    font-family: "Consolas", monospace;
+    font-size: 0.72rem;
+    color: var(--cyber-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0.15rem 0 0.5rem 1.6rem;
+}
+.latency-chip b { color: var(--cyber-cyan); font-weight: 600; }
+
+@media (max-width: 640px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 </style>
 """
 
@@ -206,6 +319,93 @@ def check_environment():
     return ok
 
 
+def embed_dim():
+    try:
+        return len(embeddings.embed_query("status"))
+    except Exception:
+        return None
+
+
+def chunk_count():
+    try:
+        from utils.retriever import get_vector_db
+
+        return get_vector_db()._collection.count()
+    except Exception:
+        return None
+
+
+def playbook_count():
+    root = os.path.join("data", "atomics")
+    if not os.path.isdir(root):
+        return None
+    count = 0
+    for _, _, files in os.walk(root):
+        count += sum(1 for f in files if f.lower().endswith(".md"))
+    return count
+
+
+def technique_count():
+    root = os.path.join("data", "atomics")
+    if not os.path.isdir(root):
+        return None
+    return sum(1 for d in os.listdir(root) if re.match(r"^T\d{4}(?:\.\d{3})?$", d))
+
+
+def latency_summary():
+    latencies = st.session_state.get("latencies", [])
+    if not latencies:
+        return None
+    return sum(latencies) / len(latencies), len(latencies)
+
+
+def _stat(value, label, accent=False):
+    value_html = f'<span class="accent">{value}</span>' if accent else value
+    return (
+        f'<div class="stat"><div class="stat-value">{value_html}</div>'
+        f'<div class="stat-label">{label}</div></div>'
+    )
+
+
+def welcome_card_html():
+    playbooks, techs, vecs = playbook_count(), technique_count(), chunk_count()
+    dim = embed_dim()
+    dim_label = f"Embeddings · {dim}-d" if dim else "Embedding model"
+
+    latency = latency_summary()
+    if latency:
+        avg, n = latency
+        latency_html = f"avg response <b>{avg:.1f}s</b> <span>· {n} quer{'y' if n == 1 else 'ies'}</span>"
+    else:
+        latency_html = "awaiting <b>first query</b>"
+
+    stats = "".join(
+        [
+            _stat(f"{playbooks:,}" if playbooks else "—", "Playbooks loaded"),
+            _stat(str(techs) if techs else "—", "Techniques covered", accent=True),
+            _stat(f"{vecs:,}" if vecs else "—", "Vectors indexed", accent=True),
+            _stat(embeddings.model_name, dim_label),
+            _stat("ChromaDB", "Vector store", accent=True),
+            _stat("gpt-oss-120b", "LLM model · Groq"),
+        ]
+    )
+
+    return f"""
+    <div class="hero-card">
+      <div class="hero-head">🛡️ <span class="hero-title">CYBERRES-AI</span></div>
+      <p class="hero-sub">// MITRE ATT&amp;CK Defense Intelligence · RAG Engine Online</p>
+      <p class="hero-intro">Hi, I'm <b>CyberResAI</b> — your MITRE ATT&amp;CK defense advisor.
+      Ask me about attacker techniques, detection ideas, or mitigation steps.</p>
+      <div class="stat-grid">{stats}</div>
+      <div class="hero-meta">
+        <span>⚡ {latency_html}</span>
+        <span>🧩 chunk <b>{CHUNK_SIZE}</b> / overlap <b>{CHUNK_OVERLAP}</b></span>
+        <span>🔎 top-k <b>{TOP_K}</b></span>
+      </div>
+    </div>
+    """
+
+
 def render_message(role, content, sources=None, avatar=True):
     bubble_class = "user-bubble" if role == "user" else "ai-bubble"
     avatar_html = (
@@ -232,15 +432,19 @@ def render_message(role, content, sources=None, avatar=True):
 
 
 def ask(question):
-    answer, sources = None, []
+    answer, sources, latency = None, [], None
     try:
         with st.spinner("🛡️ Scanning threat intel…"):
+            started = time.perf_counter()
             result = answer_question(
                 question,
-                k=st.session_state.get("k", 10),
+                k=st.session_state.get("k", TOP_K),
                 max_attempts=st.session_state.get("max_attempts", 5),
             )
+            latency = time.perf_counter() - started
             answer, sources = result.get("answer", ""), result.get("sources", [])
+            if latency is not None:
+                st.session_state.setdefault("latencies", []).append(latency)
     except RuntimeError as exc:
         st.error(f"**LLM unavailable:** {exc}", icon="⚠️")
     except Exception as exc:
@@ -248,7 +452,7 @@ def ask(question):
     else:
         if not answer:
             st.error("The model returned an empty response. Try asking differently.", icon="🤨")
-    return answer, sources
+    return answer, sources, latency
 
 
 def main():
@@ -275,17 +479,23 @@ def main():
         render_message("user", prompt)
 
         if ready:
-            answer, sources = ask(prompt)
+            answer, sources, latency = ask(prompt)
             if answer:
                 st.session_state.messages.append(
                     {"role": "assistant", "content": answer, "sources": sources}
                 )
                 render_message("assistant", answer, sources)
+                if latency is not None:
+                    st.markdown(
+                        f'<div class="latency-chip">⚡ retrieval + generation in '
+                        f'<b>{latency:.1f}s</b></div>',
+                        unsafe_allow_html=True,
+                    )
         else:
             st.info("Fix the environment issues above, then send your question again.", icon="🔧")
 
     if not st.session_state.messages:
-        render_message("assistant", DEFAULT_WELCOME, avatar=False)
+        st.markdown(welcome_card_html(), unsafe_allow_html=True)
         with st.expander("💡 Say hello by asking…"):
             st.markdown(
                 "- **Credential dumping** — how it works & how to stop it\n"
