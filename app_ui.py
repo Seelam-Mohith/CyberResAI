@@ -57,15 +57,20 @@ footer {
 
 /* nav bar */
 .cyber-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1.1rem;
     padding: 0.5rem 0.85rem;
-    background: rgba(13, 20, 36, 0.75);
-    border: 1px solid var(--cyber-border);
-    border-radius: 12px;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+    background: rgba(7, 11, 20, 0.92);
+    backdrop-filter: blur(8px);
+    border: none;
+    border-bottom: 1px solid var(--cyber-border);
+    border-radius: 0;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
 }
 .nav-left {
     display: flex;
