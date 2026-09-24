@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 
@@ -189,6 +190,13 @@ def check_environment():
         embeddings
     except Exception as exc:
         st.error(f"Could not load the embedding model: {exc}", icon="🧠")
+        ok = False
+    if not os.path.exists(os.path.join("db", "chroma.sqlite3")):
+        st.error(
+            "**Vector database not found.** Run `python ingest.py` to build it "
+            "from the playbooks, then reload the app.",
+            icon="🗄️",
+        )
         ok = False
     return ok
 

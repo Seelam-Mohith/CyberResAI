@@ -18,6 +18,7 @@ ENV/
 
 # Environment variables
 .env
+.streamlit/secrets.toml
 
 # IDE
 .vscode/
@@ -29,8 +30,7 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Chroma DB / vector stores
-chroma_db/
-db/
-*.sqlite3
+# Hugging Face model cache
+.cache/huggingface/
+huggingface/
 

@@ -56,8 +56,33 @@ CyberResAI/
 ## Usage
 
 ```bash
+streamlit run app_ui.py
+```
+
+For the terminal CLI:
+
+```bash
 python app.py
 ```
+
+## Deploy to Streamlit Community Cloud
+
+The `db/` vector store is committed so the cloud app starts instantly.
+
+1. Push this repository to GitHub.
+2. Go to [share.streamlit.io](https://share.streamlit.io) → **Create app** → "Yup, I have an app".
+3. Enter your repo, branch, and set **Main file path** to `main.py`.
+4. Open **Advanced settings**:
+   - **Python version:** `3.12`
+   - **Secrets:** paste
+     ```
+     GROQ_API_KEY = "<your-groq-api-key>"
+     ```
+5. Click **Deploy**.
+
+Notes:
+- First cold start downloads the Hugging Face embedding model (~90 MB) and can take about a minute; later loads are faster.
+- If the app fails to start with a `libgomp` error, add a `packages.txt` at the repo root containing `libgomp1`.
 
 ## Status
 
