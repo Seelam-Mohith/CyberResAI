@@ -6,6 +6,7 @@ from langchain_openai import ChatOpenAI
 
 import config
 from utils.retriever import get_retriever
+from utils.query import optimize_query
 from prompt import build_qa_prompt
 
 def get_llm():
@@ -34,9 +35,9 @@ def extract_text(content):
         return "\n".join(p for p in parts if p)
     return str(content)
 
-def answer_question(question, k=5, max_attempts=5):
+def answer_question(question, k=10, max_attempts=5):
     retriever = get_retriever(k=k)
-    docs = retriever.invoke(question)
+    docs = retriever.invoke(optimize_query(question))
 
     context = [doc.page_content for doc in docs]
     messages = build_qa_prompt(question, context)

@@ -1,6 +1,28 @@
+from typing import Any, List
+
+from langchain_core.documents import Document
+from langchain_core.retrievers import BaseRetriever
 from langchain_chroma import Chroma
 
 from utils.embeddings import embeddings
+from utils.query import optimize_query
+
+NOISE_SOURCE_SUBSTRINGS = ("indexes-markdown", "matrices")
+
+def _is_noise(source):
+    if not source:
+        return True
+    normalized = source.replace("/", "\\").lower()
+    return any(part in normalized for part in NOISE_SOURCE_SUBSTRINGS)
+
+class _FilteredRetriever(BaseRetriever):
+    base_retriever: Any
+    k: int = 10
+
+    def _get_relevant_documents(self, query: str, *, run_manager=None) -> List[Document]:
+        docs = self.base_retriever.invoke(query)
+        kept = [d for d in docs if not _is_noise(d.metadata.get("source", ""))]
+        return kept[: self.k]
 
 def get_vector_db():
     return Chroma(
@@ -8,12 +30,13 @@ def get_vector_db():
         embedding_function=embeddings
     )
 
-def get_retriever(k=5):
+def get_retriever(k=10):
     vector_db = get_vector_db()
-    return vector_db.as_retriever(search_kwargs={"k": k})
+    base_retriever = vector_db.as_retriever(search_kwargs={"k": k * 3})
+    return _FilteredRetriever(base_retriever=base_retriever, k=k)
 
 if __name__ == "__main__":
-    docs = get_retriever().invoke("How does an attacker dump credentials?")
+    docs = get_retriever().invoke(optimize_query("How does an attacker dump credentials?"))
 
     print(f"Retrieved {len(docs)} documents.\n")
 
