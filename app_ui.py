@@ -55,25 +55,71 @@ footer {
     padding-bottom: 6rem;
 }
 
-/* title */
-.cyber-title {
+/* nav bar */
+.cyber-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+    padding: 0.5rem 0.85rem;
+    background: rgba(13, 20, 36, 0.75);
+    border: 1px solid var(--cyber-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.25);
+}
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.2rem;
+}
+.nav-logo {
     font-family: "Segoe UI", "Consolas", monospace;
-    font-size: 2.6rem;
+    font-size: 1.02rem;
     font-weight: 800;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     background: linear-gradient(90deg, #00e5ff 0%, #ff2d78 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin: 0;
+    white-space: nowrap;
 }
-.cyber-sub {
-    font-family: "Consolas", "Courier New", monospace;
+.nav-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: "Consolas", monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    color: #2ee6a8;
+    white-space: nowrap;
+}
+.nav-status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #2ee6a8;
+    box-shadow: 0 0 8px rgba(46, 230, 168, 0.8);
+}
+#cybernav [data-testid="stButton"] button {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
     color: var(--cyber-dim);
-    font-size: 0.82rem;
-    letter-spacing: 0.22em;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin-top: 0.35rem;
+    padding: 0.42rem 0.5rem;
+    border-radius: 7px;
+    transition: all 0.15s ease;
+}
+#cybernav [data-testid="stButton"] button:hover {
+    color: var(--cyber-cyan);
+    border-color: rgba(0, 229, 255, 0.35);
+    background: rgba(0, 229, 255, 0.08);
+    transform: translateY(-1px);
 }
 
 .user-bubble, .ai-bubble {
@@ -455,26 +501,56 @@ def ask(question):
     return answer, sources, latency
 
 
+CLEAR_ACTION = "__clear__"
+
+
+def render_navbar():
+    st.markdown('<div id="cybernav" class="cyber-nav">', unsafe_allow_html=True)
+    brand_col, cd_col, c2_col, ph_col, new_col = st.columns(
+        [2.6, 1.35, 1.25, 1.25, 1.2], gap="small", vertical_alignment="center"
+    )
+    with brand_col:
+        st.markdown(
+            '<div class="nav-left">🛡️ <span class="nav-logo">CYBERRES-AI</span>'
+            '<span class="nav-status">ONLINE</span></div>',
+            unsafe_allow_html=True,
+        )
+    selection = None
+    with cd_col:
+        if st.button("Credential Dump", key="nav_cd", use_container_width=True):
+            selection = "How does an attacker dump credentials?"
+    with c2_col:
+        if st.button("C2 Beaconing", key="nav_c2", use_container_width=True):
+            selection = "How can I detect C2 beaconing traffic on endpoints?"
+    with ph_col:
+        if st.button("Phishing", key="nav_ph", use_container_width=True):
+            selection = "How can I defend against phishing with payload delivery?"
+    with new_col:
+        if st.button("New chat", key="nav_new", use_container_width=True):
+            selection = CLEAR_ACTION
+    st.markdown("</div>", unsafe_allow_html=True)
+    return selection
+
+
 def main():
     st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout="centered", initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
 
-    st.markdown(
-        '<div class="cyber-title">CYBERRES-AI</div>'
-        '<div class="cyber-sub">// MITRE ATT&CK Defense Intelligence</div>',
-        unsafe_allow_html=True,
-    )
-    st.write("")
-
     if "messages" not in st.session_state:
         st.session_state.messages = []
+
+    nav_prompt = render_navbar()
+    if nav_prompt == CLEAR_ACTION:
+        st.session_state.messages = []
+        st.rerun()
 
     ready = check_environment()
 
     for msg in st.session_state.messages:
         render_message(msg["role"], msg["content"], msg.get("sources"))
 
-    if prompt := st.chat_input("Ask about a technique, e.g. 'How does an attacker dump credentials?'"):
+    prompt = nav_prompt or st.chat_input("Ask about a technique, e.g. 'How does an attacker dump credentials?'")
+    if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
         render_message("user", prompt)
 
