@@ -182,8 +182,13 @@ def check_environment():
     ok = has_key()
     if not ok:
         st.error(
-            "**GROQ_API_KEY is missing.** Add it to your `.env` file "
-            "`(GROQ_API_KEY=... )` or the AI responses won't work.",
+            "**GROQ_API_KEY is missing.** The AI responses won't work until it's set.\n\n"
+            "- **Running locally** → add it to your `.env` file:\n\n"
+            "  `GROQ_API_KEY=<your-key>`\n\n"
+            "- **Running on Streamlit Cloud** → open the deployed app → **⋮ → Settings → Secrets** "
+            "and paste exactly (TOML format):\n\n"
+            "  `GROQ_API_KEY = \"<your-key>\"`\n\n"
+            "Save and the app will restart.",
             icon="🔑",
         )
     try:
