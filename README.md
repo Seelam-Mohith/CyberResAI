@@ -11,25 +11,26 @@ CyberResAI ingests the official Atomic Red Team markdown playbooks into a local 
 - **Language:** Python
 - **Embeddings:** Hugging Face `all-MiniLM-L6-v2`
 - **Vector Store:** ChromaDB
-- **LLM:** Google Gemini (via `GOOGLE_API_KEY`)
+- **LLM:** Groq `openai/gpt-oss-120b` (via `GROQ_API_KEY`)
 - **Framework:** LangChain
 
 ## Project Structure
 
 ```
 CyberResAI/
-├── app.py                  # Main application entry point (WIP)
+├── app.py                  # Main application entry point (CLI loop)
 ├── ingest.py               # Builds the ChromaDB vector store
-├── rag.py                  # Retrieval-augmented generation pipeline (WIP)
-├── prompt.py               # Prompt templates (WIP)
+├── rag.py                  # Retrieval-augmented generation pipeline
+├── prompt.py               # Prompt templates
 ├── config.py               # Environment/config loading
+├── requirements.txt        # Pinned dependencies
 ├── data/atomics/           # Atomic Red Team markdown playbooks
 ├── utils/
 │   ├── loader.py           # Loads markdown documents
 │   ├── splitter.py         # Splits documents into chunks
 │   ├── embeddings.py       # Embedding model setup
-│   └── retriever.py        # Vector retrieval (WIP)
-└── db/                     # ChromaDB persistent store
+│   └── retriever.py        # Vector retrieval
+└── db/                     # ChromaDB persistent store (gitignored)
 ```
 
 ## Setup
@@ -37,13 +38,13 @@ CyberResAI/
 1. Clone the repository and install dependencies:
 
    ```bash
-   pip install langchain_chroma langchain_huggingface langchain_community langchain_text_splitters python-dotenv
+   pip install -r requirements.txt
    ```
 
 2. Create a `.env` file in the project root:
 
    ```
-   GOOGLE_API_KEY=<your-google-api-key>
+   GROQ_API_KEY=<your-groq-api-key>
    ```
 
 3. Build the vector store from the playbooks:
@@ -60,7 +61,7 @@ python app.py
 
 ## Status
 
-Early development. Core ingestion pipeline (load → chunk → embed → index) is functional; the RAG chain, prompt templates, and application entry point are still in progress.
+Functional: ingestion pipeline (load → chunk → embed → index), RAG chain (retrieve → prompt → generate → sources), and CLI entry point are all working. Model: Groq `openai/gpt-oss-120b`.
 
 ## Disclaimer
 
