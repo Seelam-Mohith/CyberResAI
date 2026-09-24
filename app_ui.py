@@ -46,7 +46,44 @@ footer {
 }
 
 [data-testid="stSidebar"] {
-    display: none;
+    background: #0a101d;
+    border-right: 1px solid var(--cyber-border);
+}
+[data-testid="stSidebar"] * {
+    color: var(--cyber-text);
+}
+[data-testid="stSidebar"] a {
+    color: var(--cyber-cyan);
+    text-decoration: none;
+}
+[data-testid="stSidebar"] a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+[data-testid="stSidebar"] hr {
+    border-color: var(--cyber-border);
+}
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li {
+    font-family: "Segoe UI", "Consolas", monospace;
+    font-size: 0.9rem;
+}
+[data-testid="stSidebarCollapseButton"] svg {
+    fill: var(--cyber-dim);
+}
+[data-testid="collapsedControl"] {
+    background: rgba(13, 20, 36, 0.0);
+}
+[data-testid="stSidebarCollapseButton"]:hover {
+    border-color: rgba(0, 229, 255, 0.4) !important;
+}
+[data-testid="collapsedControl"] svg {
+    fill: var(--cyber-dim);
+}
+@media (max-width: 991px) {
+    [data-testid="stSidebar"] {
+        border-right: 1px solid var(--cyber-border);
+    }
 }
 
 .block-container {
@@ -537,9 +574,54 @@ def render_navbar():
     return selection
 
 
+REPO_URL = "https://github.com/Seelam-Mohith/CyberResAI"
+ISSUES_URL = "https://github.com/Seelam-Mohith/CyberResAI/issues"
+
+
+def render_sidebar():
+    with st.sidebar:
+        st.markdown(
+            '<div class="nav-left">🛡️ <span class="nav-logo" style="font-size:1.05rem;">'
+            "CYBERRES-AI</span></div>",
+            unsafe_allow_html=True,
+        )
+        st.caption("MITRE ATT&CK Defense Intelligence — RAG assistant over Atomic Red Team playbooks.")
+
+        st.markdown("---")
+
+        st.markdown("**📍 Project**")
+        st.markdown(f"- **[Repository]({REPO_URL})**")
+        st.markdown(f"- **[Report an issue]({ISSUES_URL})**")
+
+        st.markdown("---")
+
+        st.markdown("**👨‍💻 Developed by**")
+        st.markdown("**Seelam Mohith**")
+        st.caption("Cybersecurity enthusiast · Detection & response")
+
+        st.markdown("---")
+
+        st.markdown("**⚙️ Stack**")
+        st.markdown(
+            "- Embeddings: `all-MiniLM-L6-v2`\n"
+            "- Vector DB: `ChromaDB`\n"
+            "- LLM: `gpt-oss-120b` (Groq)\n"
+            "- Framework: `LangChain` + `Streamlit`"
+        )
+
+        st.markdown("---")
+
+        st.markdown(
+            "> ⚠️ **Disclaimer** — For educational and defensive security only. "
+            "Atomic tests contain simulated adversarial behavior; never run them on production systems."
+        )
+
+
 def main():
     st.set_page_config(page_title=PAGE_TITLE, page_icon=PAGE_ICON, layout="centered", initial_sidebar_state="collapsed")
     st.markdown(CSS, unsafe_allow_html=True)
+
+    render_sidebar()
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
